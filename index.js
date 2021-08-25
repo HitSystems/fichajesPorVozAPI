@@ -4,6 +4,7 @@ require('./datosApp.js')();
 const app = express();
 const port = 3030;
 
+console.clear();
 app.use(express.urlencoded({extended: false}));
 app.use(express.json());
 app.use(cors());
@@ -35,5 +36,29 @@ app.post('/cognitoNewUser', (req, res) => {
 app.get('/fichajesUser', (req, res) => {
     fichajesUser(req.query.sub).then((data) => {
         res.send(data);
+    })
+})
+app.get('/totalTrabajadores', (req, res) => {
+    totalTrabajadores(req.query.empresa).then((data) => {
+        res.send(data);
+    })
+})
+app.get('/trabajadoresActivos', (req, res) => {
+    trabajadoresActivos(req.query.empresa).then((data) => {
+        res.send(data);
+    })
+})
+app.get('/fichajes', (req, res) => {
+    let {empresa, trabajador, year, mes, franjaHoraria} = req.query;
+    listarFichajes(empresa, trabajador, year, mes, franjaHoraria).then(data => {
+        res.send(data);
+    })
+})
+app.post('/nuevoTrabajador', (req, res) => {
+    let {
+        empresa, nombre, primerApellido, segundoApellido, email, passwd, telefono, movil, nacimiento, direccion, fechaAlta, cargo, informacionComplementaria, administrador, imagen
+    } = req.body;
+    crearTrabajador(empresa, nombre, primerApellido, segundoApellido, email, passwd, telefono, movil, nacimiento, direccion, fechaAlta, cargo, informacionComplementaria, administrador, imagen).then((data) => {
+        res.send('hola');
     })
 })
