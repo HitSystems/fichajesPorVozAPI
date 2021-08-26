@@ -22,8 +22,8 @@ app.get('/users', (req, res) => {
         res.send(data)
     })
 })
-app.get('/user', (req, res) => {
-    listarUser(req.query.empresa, req.query.nombre).then((data) => {
+app.get('/userData', (req, res) => {
+    userData(req.query.sub).then((data) => {
         res.send(data);
     })
 })

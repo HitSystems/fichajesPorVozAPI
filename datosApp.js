@@ -21,7 +21,7 @@ module.exports = () => {
         await conexion.recHit('Hit', `INSERT INTO cognitoUsersSUB (idTrabajador, nombre, mail, empresa, SUB) VALUES (${idTrabajador}, '${nombre}', '${email}', '${empresa}', '${sub}')`);
     }
     listarUsuarios = async (empresa) => {
-        let usuarios = await conexion.recHit(`Fac_${empresa}`, 'SELECT * FROM Dependentes');
+        let usuarios = await conexion.recHit(empresa, 'SELECT * FROM Dependentes');
         let dataUsuarios = [];
         for(let user in usuarios.recordset) {
             let {CODI:codi, NOM:nom, MEMO:memo} = usuarios.recordset[user];
@@ -34,13 +34,17 @@ module.exports = () => {
         }
         return dataUsuarios;
     };
-    listarUser = async (empresa, nombre) => {
-        let user = await conexion.recHit(`Fac_${empresa}`, `SELECT CODI FROM Dependentes WHERE NOM like '${nombre}%'`);
-        console.log(user);
+    userData = async (sub) => {
+        let userData = await conexion.recHit('Hit', `SELECT * FROM cognitoUsersSUB WHERE sub = '${sub}'`);
+        let {idTrabajador, nombre, mail, empresa} = userData.recordset[0];
+        return {
+            idTrabajador,
+            nombre,
+            mail,
+            empresa
+        }
     }
-    fichajesUser = async (sub) => {
-        let userInfo = await conexion.recHit('Hit', `SELECT idTrabajador, empresa FROM cognitoUsersSUB WHERE sub = '${sub}'`);
-        let {idTrabajador, empresa} = userInfo.recordset[0];
+    fichajesUser = async (idTrabajador, empresa) => {
         let sql = `
             SELECT tmst as fichaje FROM (SELECT TOP 1 * FROM cdpDadesFichador WHERE usuari = ${idTrabajador} AND accio = 1 ORDER BY tmst DESC) AS a 
             UNION ALL
@@ -53,14 +57,14 @@ module.exports = () => {
         }
     }
     totalTrabajadores = async (empresa) => {
-        let total = await conexion.recHit(`Fac_${empresa}`, 'SELECT COUNT(Codi) as Total FROM Dependentes');
+        let total = await conexion.recHit(empresa, 'SELECT COUNT(Codi) as Total FROM Dependentes');
         return {
             total: total.recordset[0].Total
         };
     }
     trabajadoresActivos = async (empresa) => {
         let sql = 'SELECT usuari, tmst FROM cdpDadesFichador WHERE tmst IN (SELECT MAX(tmst) FROM cdpDadesFichador GROUP BY usuari) AND accio = 1 AND CAST(tmst AS Date) = CAST(GETDATE() AS Date) ORDER BY tmst DESC';
-        let trabajadoresActivos = await conexion.recHit(`Fac_${empresa}`, sql);
+        let trabajadoresActivos = await conexion.recHit(empresa, sql);
         return trabajadoresActivos.recordsets[0];
     }
     listarFichajes = async (empresa, trabajador, year, mes, franjaHoraria) => {
@@ -89,16 +93,16 @@ module.exports = () => {
                 ORDER BY tmst DESC
             `;
         }
-        let datos = await conexion.recHit(`Fac_${empresa}`, sql);
+        let datos = await conexion.recHit(empresa, sql);
         return datos.recordsets[0];
     }
     crearTrabajador = async (empresa, nombre, primerApellido, segundoApellido, email, passwd, telefono, movil, nacimiento, direccion, fechaAlta, cargo, informacionComplementaria,administrador, imagen) => {
-        let sqlMaxCODI = await conexion.recHit(`Fac_${empresa}`, 'SELECT MAX(CODI) as codi FROM Dependentes');
+        let sqlMaxCODI = await conexion.recHit(empresa, 'SELECT MAX(CODI) as codi FROM Dependentes');
         console.log(sqlMaxCODI);
         let newCodi = (sqlMaxCODI.recordset[0].codi) + 1;
         console.log(newCodi);
         let sqlDependentes = `INSERT INTO Dependentes (CODI, NOM, MEMO, TELEFON, ADREÇA, Icona, [Hi Editem Horaris], Tid) VALUES (${newCodi},'${nombre} ${primerApellido} ${segundoApellido}', '${nombre}', ${movil}, '${direccion}', NULL, 1, NULL)`;
-        conexion.recHit(`Fac_${empresa}`, sqlDependentes);
+        conexion.recHit(empresa, sqlDependentes);
         let sqlDependentesExtes = `INSERT INTO DependentesExtes ()`;
         return 1;
     }
