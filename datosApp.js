@@ -63,11 +63,12 @@ module.exports = () => {
         };
     }
     trabajadoresActivos = async (empresa) => {
-        let sql = 'SELECT usuari, tmst FROM cdpDadesFichador WHERE tmst IN (SELECT MAX(tmst) FROM cdpDadesFichador GROUP BY usuari) AND accio = 1 AND CAST(tmst AS Date) = CAST(GETDATE() AS Date) ORDER BY tmst DESC';
+        let sql = 'SELECT usuari, tmst, NOM AS nom FROM cdpDadesFichador AS a INNER JOIN Dependentes AS b ON a.usuari = b.CODI WHERE tmst IN (SELECT MAX(tmst) FROM cdpDadesFichador GROUP BY usuari) AND accio = 1 AND CAST(tmst AS Date) = CAST(GETDATE() AS Date) ORDER BY tmst DESC';
         let trabajadoresActivos = await conexion.recHit(empresa, sql);
         return trabajadoresActivos.recordsets[0];
     }
     listarFichajes = async (empresa, trabajador, year, mes, franjaHoraria) => {
+        console.log(empresa, trabajador, year, mes, franjaHoraria);
         let horaMaxima = 23, horaMinima = 0, sql = '';
         if(franjaHoraria == 1) {
             horaMinima = 5;
@@ -76,7 +77,7 @@ module.exports = () => {
             horaMinima = 14;
             horaMaxima = 23;
         }
-        if(trabajador == 0) {
+        if(trabajador == 0 || trabajador == 'Todos los trabajadores') {
             sql = `
                 SELECT CAST(tmst AS Date) AS fecha, DATEPART(hour, tmst) AS hora, accio, nom FROM cdpDadesFichador
                 JOIN Dependentes ON usuari = Dependentes.CODI
@@ -94,7 +95,8 @@ module.exports = () => {
             `;
         }
         let datos = await conexion.recHit(empresa, sql);
-        return datos.recordsets[0];
+        console.log(datos.recordset);
+        return datos.recordset;
     }
     crearTrabajador = async (empresa, nombre, primerApellido, segundoApellido, email, passwd, telefono, movil, nacimiento, direccion, fechaAlta, cargo, informacionComplementaria,administrador, imagen) => {
         let sqlMaxCODI = await conexion.recHit(empresa, 'SELECT MAX(CODI) as codi FROM Dependentes');
