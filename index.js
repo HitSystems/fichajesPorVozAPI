@@ -62,3 +62,8 @@ app.post('/nuevoTrabajador', (req, res) => {
         res.send('hola');
     })
 })
+app.get('/datosTrabajador', (req, res) => {
+    datosTrabajador(req.query.empresa, req.query.idUsuario).then((data) => {
+        res.send(data);
+    })
+})

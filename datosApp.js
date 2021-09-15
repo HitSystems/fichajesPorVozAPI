@@ -108,4 +108,11 @@ module.exports = () => {
         let sqlDependentesExtes = `INSERT INTO DependentesExtes ()`;
         return 1;
     }
+    datosTrabajador = async (empresa, idUsuario) => {
+        let data = await conexion.recHit(empresa, `SELECT valor FROM dependentesExtes WHERE id = ${idUsuario} AND (nom = 'TLF_MOBIL' OR nom = 'ADRESA')`);
+        return {
+            movil: data.recordset[0].valor,
+            direccion: data.recordset[1].valor
+        };
+    }
 }
