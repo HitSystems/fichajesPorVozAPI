@@ -5,8 +5,8 @@ const app = express();
 const port = 3030;
 
 console.clear();
-app.use(express.urlencoded({extended: false}));
-app.use(express.json());
+app.use(express.urlencoded({extended: false, limit: '50mb'}));
+app.use(express.json({limit: '50mb'}));
 app.use(cors());
 
 app.listen(port, () => {
@@ -54,10 +54,10 @@ app.get('/fichajes', (req, res) => {
 })
 app.post('/nuevoTrabajador', (req, res) => {
     let {
-        empresa, nombre, primerApellido, segundoApellido, email, passwd, telefono, movil, nacimiento, direccion, fechaAlta, cargo, informacionComplementaria, administrador, imagen
+        empresa, nombre, primerApellido, segundoApellido, email, genero, dni, telefono, movil, nacimiento, direccion, fechaAlta, cargo, informacionComplementaria, administrador, imagen
     } = req.body;
-    crearTrabajador(empresa, nombre, primerApellido, segundoApellido, email, passwd, telefono, movil, nacimiento, direccion, fechaAlta, cargo, informacionComplementaria, administrador, imagen).then((data) => {
-        res.send('hola');
+    crearTrabajador(empresa, nombre, primerApellido, segundoApellido, email, genero, dni, telefono, movil, nacimiento, direccion, fechaAlta, cargo, informacionComplementaria, administrador, imagen).then((data) => {
+        res.sendStatus(200);
     })
 })
 app.get('/datosTrabajador', (req, res) => {

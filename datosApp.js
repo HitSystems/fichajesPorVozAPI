@@ -97,14 +97,24 @@ module.exports = () => {
         let datos = await conexion.recHit(empresa, sql);
         return datos.recordset;
     }
-    crearTrabajador = async (empresa, nombre, primerApellido, segundoApellido, email, passwd, telefono, movil, nacimiento, direccion, fechaAlta, cargo, informacionComplementaria,administrador, imagen) => {
+    crearTrabajador = async (empresa, nombre, primerApellido, segundoApellido, email, genero, dni, telefono, movil, nacimiento, direccion, fechaAlta, cargo, informacionComplementaria, administrador, imagen) => {
         let sqlMaxCODI = await conexion.recHit(empresa, 'SELECT MAX(CODI) as codi FROM Dependentes');
-        console.log(sqlMaxCODI);
         let newCodi = (sqlMaxCODI.recordset[0].codi) + 1;
-        console.log(newCodi);
         let sqlDependentes = `INSERT INTO Dependentes (CODI, NOM, MEMO, TELEFON, ADREÇA, Icona, [Hi Editem Horaris], Tid) VALUES (${newCodi},'${nombre} ${primerApellido} ${segundoApellido}', '${nombre}', ${movil}, '${direccion}', NULL, 1, NULL)`;
         conexion.recHit(empresa, sqlDependentes);
-        let sqlDependentesExtes = `INSERT INTO DependentesExtes ()`;
+        let sqlDependentesExtes = `INSERT INTO DependentesExtes VALUES 
+                                   (${newCodi}, 'TLF_MOBIL', '${movil}'),
+                                   (${newCodi}, 'SEXE', '${genero}'),
+                                   (${newCodi}, 'DNI', '${dni}'),
+                                   (${newCodi}, 'DATA_NAIXEMENT', '${nacimiento.replace(/-/g, '/')}'),
+                                   (${newCodi}, 'EMAIL', '${email}'),
+                                   (${newCodi}, 'FECHA_ALTA', '${fechaAlta}'),
+                                   (${newCodi}, 'CARGO', '${cargo}'),
+                                   (${newCodi}, 'INFORMACION_COMPLEMENTARIA', '${informacionComplementaria}'),
+                                   (${newCodi}, 'TELEFONO', '${telefono}'),
+                                   (${newCodi}, 'IMAGEN', '${imagen}')`;
+        if(administrador) sqlDependentesExtes += `, (${newCodi}, 'TIPUSTREBALLADOR', 'GERENT')`;
+        await conexion.recHit(empresa, sqlDependentesExtes);
         return 1;
     }
     datosTrabajador = async (empresa, idUsuario) => {
