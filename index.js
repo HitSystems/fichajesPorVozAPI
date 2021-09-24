@@ -12,11 +12,9 @@ app.use(cors());
 app.listen(port, () => {
     console.log(`Server is listening on port ${port}`);
 })
-
 app.get('/', (req, res) => {
     res.send('Esto es la API de FichajesPorVoz');
 });
-
 app.get('/users', (req, res) => {
     listarUsuarios(req.query.empresa).then((data) => {
         res.send(data)
@@ -65,5 +63,17 @@ app.post('/nuevoTrabajador', (req, res) => {
 app.get('/datosTrabajador', (req, res) => {
     datosTrabajador(req.query.empresa, req.query.idUsuario).then((data) => {
         res.send(data);
+    })
+})
+app.get('/eventosCalendario', (req, res) => {
+    eventosCalendario(req.query.empresa, req.query.idTrabajador).then((data) => {
+        res.send(data);
+    })
+})
+app.post('/nuevoEventoCalendario', (req, res) => {
+    let { empresa, idTrabajador, tipoEvento, nombreEvento, principioEvento, finEvento } = req.body;
+    nuevoEventoCalendario(empresa, idTrabajador, tipoEvento, nombreEvento, principioEvento, finEvento).then((data) => {
+        console.log('Evento creado');
+        res.sendStatus(200);
     })
 })

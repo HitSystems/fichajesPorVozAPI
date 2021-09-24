@@ -95,7 +95,6 @@ module.exports = () => {
             `;
         }
         let datos = await conexion.recHit(empresa, sql);
-        console.log(datos.recordset);
         return datos.recordset;
     }
     crearTrabajador = async (empresa, nombre, primerApellido, segundoApellido, email, passwd, telefono, movil, nacimiento, direccion, fechaAlta, cargo, informacionComplementaria,administrador, imagen) => {
@@ -114,5 +113,26 @@ module.exports = () => {
             movil: data.recordset[0].valor,
             direccion: data.recordset[1].valor
         };
+    }
+    eventosCalendario = async (empresa, idTrabajador) => {
+        let data;
+        if(idTrabajador == 0) {
+            data = await conexion.recHit(empresa, `SELECT id, tipoEvento as color, nombreEvento as title, principioEvento as 'from', finEvento as 'to' FROM Calendario_FichajePorVoz`);
+            console.log(data);
+        } else {
+            data = await conexion.recHit(empresa, `SELECT tipoEvento as color, nombreEvento as title, principioEvento as 'from', finEvento as 'to' FROM Calendario_FichajePorVoz WHERE idTrabajador = ${idTrabajador}`);
+        }
+        let datos = data.recordset.map((item) => {
+            item.color = item.color == 1 ? '#57d64b' :
+                         item.color == 2 ? '#3cf0e4' :
+                         item.color == 3 ? '#f09e54' : '#f27166';
+            return item;
+        })
+        return datos;
+    }
+    nuevoEventoCalendario = async (empresa, idTrabajador, tipoEvento, nombreEvento, principioEvento, finEvento) => {
+        let sql = `INSERT INTO Calendario_FichajePorVoz (idTrabajador, tipoEvento, nombreEvento, principioEvento, finEvento) VALUES (${idTrabajador}, ${tipoEvento}, '${nombreEvento}', '${principioEvento}', '${finEvento}')`;
+        await conexion.recHit(empresa, sql);
+        return 1;
     }
 }
