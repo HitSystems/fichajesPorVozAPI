@@ -37,11 +37,14 @@ module.exports = () => {
     userData = async (sub) => {
         let userData = await conexion.recHit('Hit', `SELECT * FROM cognitoUsersSUB WHERE sub = '${sub}'`);
         let {idTrabajador, nombre, mail, empresa} = userData.recordset[0];
+        let { accionUltimoFichaje, accionUltimoDescanso } = await ultimasAccionesFichajes(idTrabajador, empresa);
         return {
             idTrabajador,
             nombre,
             mail,
-            empresa
+            empresa,
+            accionUltimoFichaje,
+            accionUltimoDescanso,
         }
     }
     fichajesUser = async (idTrabajador, empresa) => {
@@ -144,5 +147,13 @@ module.exports = () => {
         let sql = `INSERT INTO Calendario_FichajePorVoz (idTrabajador, tipoEvento, nombreEvento, principioEvento, finEvento) VALUES (${idTrabajador}, ${tipoEvento}, '${nombreEvento}', '${principioEvento}', '${finEvento}')`;
         await conexion.recHit(empresa, sql);
         return 1;
+    }
+    ultimasAccionesFichajes = async (idTrabajador, empresa) => {
+        let accionUltimoFichaje = await conexion.recHit(empresa, `SELECT TOP 1 accio FROM cdpDadesFichador WHERE usuari = ${idTrabajador} AND (accio = 1 OR accio = 2) GROUP BY tmst, usuari, accio ORDER BY tmst DESC`);
+        let accionUltimoDescanso = await conexion.recHit(empresa, `SELECT TOP 1 accio FROM cdpDadesFichador WHERE usuari = ${idTrabajador} AND (accio = 3 OR accio = 4) GROUP BY tmst, usuari, accio ORDER BY tmst DESC`)
+        return {
+            accionUltimoFichaje: accionUltimoFichaje.recordset[0] != null ? accionUltimoFichaje.recordset[0].accio : 2,
+            accionUltimoDescanso: accionUltimoDescanso.recordset[0] != null ? accionUltimoDescanso.recordset[0].accio : 4,
+        }
     }
 }
