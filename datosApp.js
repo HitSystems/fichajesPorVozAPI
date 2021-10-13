@@ -114,17 +114,20 @@ module.exports = () => {
                                    (${newCodi}, 'FECHA_ALTA', '${fechaAlta}'),
                                    (${newCodi}, 'CARGO', '${cargo}'),
                                    (${newCodi}, 'INFORMACION_COMPLEMENTARIA', '${informacionComplementaria}'),
-                                   (${newCodi}, 'TELEFONO', '${telefono}'),
-                                   (${newCodi}, 'IMAGEN', '${imagen}')`;
+                                   (${newCodi}, 'TELEFONO', '${telefono}')`;
         if(administrador) sqlDependentesExtes += `, (${newCodi}, 'TIPUSTREBALLADOR', 'GERENT')`;
         await conexion.recHit(empresa, sqlDependentesExtes);
-        return 1;
+        return {
+            id: newCodi
+        };
     }
     datosTrabajador = async (empresa, idUsuario) => {
-        let data = await conexion.recHit(empresa, `SELECT valor FROM dependentesExtes WHERE id = ${idUsuario} AND (nom = 'TLF_MOBIL' OR nom = 'ADRESA')`);
+        let data = await conexion.recHit(empresa, `SELECT valor FROM dependentesExtes WHERE id = ${idUsuario} AND (nom = 'TLF_MOBIL' OR nom = 'ADRESA' OR nom = 'IMAGEN_FICHAJEPORVOZ') ORDER BY nom`);
+        console.log(data);
         return {
-            movil: data.recordset[0].valor,
-            direccion: data.recordset[1].valor
+            direccion: data.recordset[0].valor,
+            imagen: data.recordset[1] !== null ? data.recordset[1].valor : 'https://media-exp3.licdn.com/dms/image/C4D0BAQHmN_j9JghpIA/company-logo_200_200/0/1591341525462?e=2159024400&v=beta&t=qruY0BBlI1LtzqfcOo9UOtJNKITx_0Rc9wJY8RhC-Og',
+            movil: data.recordset[2].valor,
         };
     }
     eventosCalendario = async (empresa, idTrabajador) => {
@@ -155,5 +158,13 @@ module.exports = () => {
             accionUltimoFichaje: accionUltimoFichaje.recordset[0] != null ? accionUltimoFichaje.recordset[0].accio : 2,
             accionUltimoDescanso: accionUltimoDescanso.recordset[0] != null ? accionUltimoDescanso.recordset[0].accio : 4,
         }
+    }
+    accionFichajeTrabajador = async (empresa, idTrabajador, accion, lat, lon) => {
+        await conexion.recHit(empresa, `INSERT INTO cdpDadesFichador VALUES (0, getdate(), ${accion}, ${idTrabajador}, newid(), NULL, NULL, 1, '[Desde: FichajePorVoz][${lat},${lon}]')`);
+        let { accionUltimoFichaje, accionUltimoDescanso } = await ultimasAccionesFichajes(idTrabajador, empresa);
+        return {
+            accionUltimoFichaje,
+            accionUltimoDescanso,
+        };
     }
 }
