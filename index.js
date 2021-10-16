@@ -90,3 +90,9 @@ app.post('/fichar', (req, res) => {
         res.send(data);
     })
 })
+app.get('/informeMensual', (req, res) => {
+    let { empresa, idTrabajador } = req.query;
+    informeMensual(empresa, idTrabajador).then((data) => {
+        res.send(data);
+    })
+})

@@ -123,7 +123,6 @@ module.exports = () => {
     }
     datosTrabajador = async (empresa, idUsuario) => {
         let data = await conexion.recHit(empresa, `SELECT valor FROM dependentesExtes WHERE id = ${idUsuario} AND (nom = 'TLF_MOBIL' OR nom = 'ADRESA' OR nom = 'IMAGEN_FICHAJEPORVOZ') ORDER BY nom`);
-        console.log(data);
         return {
             direccion: data.recordset[0].valor,
             imagen: data.recordset[1] !== null ? data.recordset[1].valor : 'https://media-exp3.licdn.com/dms/image/C4D0BAQHmN_j9JghpIA/company-logo_200_200/0/1591341525462?e=2159024400&v=beta&t=qruY0BBlI1LtzqfcOo9UOtJNKITx_0Rc9wJY8RhC-Og',
@@ -165,6 +164,32 @@ module.exports = () => {
         return {
             accionUltimoFichaje,
             accionUltimoDescanso,
+        };
+    }
+    informeMensual = async (empresa, idTrabajador) => {
+        const sql = `SELECT tmst, accio FROM cdpDadesFichador WHERE usuari = ${idTrabajador} AND MONTH(tmst) = ${new Date().getMonth()+1} AND YEAR(tmst) = ${new Date().getFullYear()} ORDER BY tmst DESC`;
+        let horas = await conexion.recHit(empresa, sql);
+        console.log(sql);
+        let infoHoras = horas.recordset;
+        let totalHoras = 0, totalMinutos = 0, totalSegundos = 0;
+        let posibleFallo = false;
+        for(let i = 0; i < infoHoras.length; i += 2) {
+            if(infoHoras[i+1] != null) {
+                console.log(infoHoras[i].tmst, infoHoras[i+1].tmst);
+                let diferenciaTiempo = new Date(infoHoras[i].tmst) - new Date(infoHoras[i+1].tmst);
+                console.log(new Date(diferenciaTiempo));
+                totalHoras += new Date(diferenciaTiempo).getHours()-1 + new Date(diferenciaTiempo).getMinutes()/60 + new Date(diferenciaTiempo).getSeconds()/3600;
+                totalMinutos += (new Date(diferenciaTiempo).getHours()-1)*60 + new Date(diferenciaTiempo).getMinutes() + new Date(diferenciaTiempo).getSeconds()/60;
+                totalSegundos += (new Date(diferenciaTiempo).getHours()-1)*3600 + new Date(diferenciaTiempo).getMinutes()*60 + new Date(diferenciaTiempo).getSeconds();
+            } else {
+                posibleFallo = true;
+            }
+        }
+        return {
+            horas: totalHoras.toFixed(2),
+            minutos: totalMinutos.toFixed(2),
+            segundos: totalSegundos.toString(),
+            error: posibleFallo,
         };
     }
 }
