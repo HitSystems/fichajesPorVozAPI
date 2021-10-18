@@ -82,7 +82,7 @@ module.exports = () => {
         }
         if(trabajador == 0 || trabajador == 'Todos los trabajadores') {
             sql = `
-                SELECT CAST(tmst AS Date) AS fecha, DATEPART(hour, tmst) AS hora, accio, nom FROM cdpDadesFichador
+                SELECT CAST(tmst AS Date) AS fecha, DATEPART(hour, tmst) AS hora, accio, nom, comentari FROM cdpDadesFichador
                 JOIN Dependentes ON usuari = Dependentes.CODI
                 WHERE DATEPART(hour, tmst) > ${horaMinima} AND DATEPART(hour, tmst) < ${horaMaxima}
                 AND MONTH(tmst) = ${mes} AND YEAR(tmst) = ${year}
@@ -90,7 +90,7 @@ module.exports = () => {
             `;
         } else {
             sql = `
-                SELECT CAST(tmst AS Date) AS fecha, DATEPART(hour, tmst) AS hora, accio, nom FROM cdpDadesFichador
+                SELECT CAST(tmst AS Date) AS fecha, DATEPART(hour, tmst) AS hora, accio, nom, comentari FROM cdpDadesFichador
                 JOIN Dependentes ON usuari = Dependentes.CODI
                 WHERE usuari = ${trabajador} AND DATEPART(hour, tmst) > ${horaMinima} AND DATEPART(hour, tmst) < ${horaMaxima}
                 AND MONTH(tmst) = ${mes} AND YEAR(tmst) = ${year}
@@ -169,7 +169,6 @@ module.exports = () => {
     informeMensual = async (empresa, idTrabajador) => {
         const sql = `SELECT tmst, accio FROM cdpDadesFichador WHERE usuari = ${idTrabajador} AND MONTH(tmst) = ${new Date().getMonth()+1} AND YEAR(tmst) = ${new Date().getFullYear()} ORDER BY tmst DESC`;
         let horas = await conexion.recHit(empresa, sql);
-        console.log(sql);
         let infoHoras = horas.recordset;
         let totalHoras = 0, totalMinutos = 0, totalSegundos = 0;
         let posibleFallo = false;
