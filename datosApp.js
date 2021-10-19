@@ -167,16 +167,23 @@ module.exports = () => {
         };
     }
     informeMensual = async (empresa, idTrabajador) => {
-        const sql = `SELECT tmst, accio FROM cdpDadesFichador WHERE usuari = ${idTrabajador} AND MONTH(tmst) = ${new Date().getMonth()+1} AND YEAR(tmst) = ${new Date().getFullYear()} ORDER BY tmst ASC`;
+        const sql = `
+            SELECT tmst, historial finEvento, accio, comentari FROM cdpDadesFichador
+            WHERE usuari = ${idTrabajador} AND YEAR(tmst) = ${new Date().getFullYear()} AND MONTH(tmst) = ${new Date().getMonth()+1}
+            UNION ALL
+            SELECT principioEvento tmst, convert(nvarchar, finEvento, 120), tipoEvento accio, nombreevento comentari FROM Calendario_FichajePorVoz
+            WHERE idTrabajador = ${idTrabajador} AND YEAR(principioEvento) = ${new Date().getFullYear()} AND MONTH(principioEvento) = ${new Date().getMonth()+1}
+            ORDER BY tmst ASC
+        `
         let horas = await conexion.recHit(empresa, sql);
         let infoHoras = horas.recordset;
         let totalHoras = 0, totalMinutos = 0, totalSegundos = 0;
         let posibleFallo = false;
-        for(let i = 0; i < infoHoras.length; i += 2) {
-            if(infoHoras[i] != null && infoHoras[i+1] != null) {
-                console.log(infoHoras[i].tmst, infoHoras[i+1].tmst);
-                let diferenciaTiempo = new Date(infoHoras[i+1].tmst) - new Date(infoHoras[i].tmst);
-                console.log(new Date(diferenciaTiempo));
+        console.log(infoHoras);
+        let tmstHoras = infoHoras.filter(t => t.finEvento === null).map(tt => tt);
+        for(let i = 0; i < tmstHoras.length; i += 2) {
+            if(tmstHoras[i] != null && tmstHoras[i+1] != null) {
+                let diferenciaTiempo = new Date(tmstHoras[i+1].tmst) - new Date(tmstHoras[i].tmst);
                 totalHoras += new Date(diferenciaTiempo).getHours()-1 + new Date(diferenciaTiempo).getMinutes()/60 + new Date(diferenciaTiempo).getSeconds()/3600;
                 totalMinutos += (new Date(diferenciaTiempo).getHours()-1)*60 + new Date(diferenciaTiempo).getMinutes() + new Date(diferenciaTiempo).getSeconds()/60;
                 totalSegundos += (new Date(diferenciaTiempo).getHours()-1)*3600 + new Date(diferenciaTiempo).getMinutes()*60 + new Date(diferenciaTiempo).getSeconds();
@@ -184,16 +191,53 @@ module.exports = () => {
                 posibleFallo = true;
             }
         }
-        const fichajesUser = await conexion.recHit(empresa, `SELECT * FROM cdpDadesFichador WHERE usuari = ${idTrabajador} AND MONTH(tmst) = ${new Date().getMonth()+1} AND YEAR(tmst) = ${new Date().getFullYear()} ORDER BY tmst ASC`);
         const dataUser = await conexion.recHit(empresa, `SELECT * FROM dependentes WHERE codi = ${idTrabajador}`);
-        console.log(dataUser)
+        calcularHorasTotales(empresa, idTrabajador, 4);
         return {
             horas: totalHoras.toFixed(2),
             minutos: totalMinutos.toFixed(2),
             segundos: totalSegundos.toString(),
             error: posibleFallo,
-            fichajes: fichajesUser.recordset,
+            fichajes: infoHoras,
             infoTrabajador: dataUser.recordset,
         };
+    }
+    calcularHorasTotales = async (empresa, idTrabajador, intervalo) => {
+        const sql = `SELECT nom, valor FROM dependentesExtes WHERE nom LIKE 'hBase_%' AND id = ${idTrabajador} ORDER BY nom ASC`;
+        const datos = await conexion.recHit(empresa, sql);
+        let { TotalHoras:totalHoras } = datos.recordset[0];
+        const diasTotales = getTotalDiasMes();
+        const horasPorDiaTotales = {
+            lunes: datos.recordset[2].valor*diasTotales['1'],
+            martes: datos.recordset[3].valor*diasTotales['2'],
+            miercoles: datos.recordset[6].valor*diasTotales['3'],
+            jueves: datos.recordset[1].valor*diasTotales['4'],
+            viernes: datos.recordset[5].valor*diasTotales['5'],
+            sabado: datos.recordset[4].valor*diasTotales['6'],
+            domingo: datos.recordset[0].valor*diasTotales['0'],
+        }
+        const sumaMes = Object.values(horasPorDiaTotales).reduce((a, b) => a + b)
+        console.log(horasPorDiaTotales);
+        console.log(diasTotales);
+        console.log(sumaMes);
+    }
+    getTotalDiasMes = () => {
+        const year = new Date().getFullYear();
+        const month = new Date().getMonth();
+        var date = new Date(year, month, 1);
+        let diasTotales = {
+            '0': 0,
+            '1': 0,
+            '2': 0,
+            '3': 0,
+            '4': 0,
+            '5': 0,
+            '6': 0,
+        }
+        while (date.getMonth() == month) {
+            diasTotales[date.getDay()] += 1;
+            date.setDate(date.getDate() + 1);
+        }
+        return diasTotales;
     }
 }
