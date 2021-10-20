@@ -209,7 +209,7 @@ module.exports = () => {
         const sql = `SELECT nom, valor FROM dependentesExtes WHERE nom LIKE 'hBase_%' AND id = ${idTrabajador} ORDER BY nom ASC`;
         const datos = await conexion.recHit(empresa, sql);
         console.log(datos)
-        if(datos.recordset === []) {
+        if(datos.rowsAffected[0] === 0) {
             return null;
         }
         let { TotalHoras:totalHoras } = datos.recordset[0];
