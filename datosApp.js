@@ -208,6 +208,9 @@ module.exports = () => {
     calcularHorasTotales = async (empresa, idTrabajador, intervalo) => {
         const sql = `SELECT nom, valor FROM dependentesExtes WHERE nom LIKE 'hBase_%' AND id = ${idTrabajador} ORDER BY nom ASC`;
         const datos = await conexion.recHit(empresa, sql);
+        if(datos.recordset === null) {
+            return null;
+        }
         let { TotalHoras:totalHoras } = datos.recordset[0];
         let diasTotales = getTotalDiasMes();
         /*if(intervalo === 1) {
