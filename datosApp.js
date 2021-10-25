@@ -133,7 +133,6 @@ module.exports = () => {
         let data;
         if(idTrabajador == 0) {
             data = await conexion.recHit(empresa, `SELECT id, tipoEvento as color, nombreEvento as title, principioEvento as 'from', finEvento as 'to' FROM Calendario_FichajePorVoz`);
-            console.log(data);
         } else {
             data = await conexion.recHit(empresa, `SELECT tipoEvento as color, nombreEvento as title, principioEvento as 'from', finEvento as 'to' FROM Calendario_FichajePorVoz WHERE idTrabajador = ${idTrabajador}`);
         }
@@ -166,15 +165,20 @@ module.exports = () => {
             accionUltimoDescanso,
         };
     }
-    informeMensual = async (empresa, idTrabajador) => {
+    informe = async (empresa, idTrabajador, periodo, dia, mes, year) => {
+        if(periodo == 0) return informeSemanal(empresa, idTrabajador, dia, mes, year);
+        else if(periodo == 1) return informeMensual(empresa, idTrabajador, mes, year);
+        else return informeAnual(empresa, idTrabajador, year);
+    }
+    informeMensual = async (empresa, idTrabajador, mes, year) => {
         const sql = `
             SELECT tmst, historial finEvento, accio, comentari FROM cdpDadesFichador
-            WHERE usuari = ${idTrabajador} AND YEAR(tmst) = ${new Date().getFullYear()} AND MONTH(tmst) = ${new Date().getMonth()+1}
+            WHERE usuari = ${idTrabajador} AND YEAR(tmst) = ${year} AND MONTH(tmst) = ${mes}
             UNION ALL
             SELECT principioEvento tmst, convert(nvarchar, finEvento, 120), tipoEvento accio, nombreevento comentari FROM Calendario_FichajePorVoz
-            WHERE idTrabajador = ${idTrabajador} AND YEAR(principioEvento) = ${new Date().getFullYear()} AND MONTH(principioEvento) = ${new Date().getMonth()+1}
+            WHERE idTrabajador = ${idTrabajador} AND YEAR(principioEvento) = ${year} AND MONTH(principioEvento) = ${mes}
             ORDER BY tmst ASC
-        `
+        `;
         let horas = await conexion.recHit(empresa, sql);
         let infoHoras = horas.recordset;
         let totalHoras = 0, totalMinutos = 0, totalSegundos = 0;
@@ -199,41 +203,136 @@ module.exports = () => {
             error: posibleFallo,
             fichajes: infoHoras,
             infoTrabajador: dataUser.recordset,
-            horasTotalesMes: await calcularHorasTotales(empresa, idTrabajador, 4),
+            horasTotalesMes: await calcularHorasTotales(empresa, idTrabajador, 1, 0, mes, year),
         };
     }
-    getInformeMensual = async (empresa, idTrabajador) => {
-
+    informeAnual = async (empresa, idTrabajador, year) => {
+        console.log('Entro en el informe')
+        const sql = `
+            SELECT tmst, historial finEvento, accio, comentari FROM cdpDadesFichador
+            WHERE usuari = ${idTrabajador} AND YEAR(tmst) = ${year}
+            UNION ALL
+            SELECT principioEvento tmst, convert(nvarchar, finEvento, 120), tipoEvento accio, nombreevento comentari FROM Calendario_FichajePorVoz
+            WHERE idTrabajador = ${idTrabajador} AND YEAR(principioEvento) = ${year}
+            ORDER BY tmst ASC
+        `;
+        let horas = await conexion.recHit(empresa, sql);
+        let infoHoras = horas.recordset;
+        let totalHoras = 0, totalMinutos = 0, totalSegundos = 0;
+        let posibleFallo = false;
+        //console.log(infoHoras);
+        let tmstHoras = infoHoras.filter(t => t.finEvento === null).map(tt => tt);
+        for(let i = 0; i < tmstHoras.length; i += 2) {
+            if(tmstHoras[i] != null && tmstHoras[i+1] != null) {
+                let diferenciaTiempo = new Date(tmstHoras[i+1].tmst) - new Date(tmstHoras[i].tmst);
+                totalHoras += new Date(diferenciaTiempo).getHours()-1 + new Date(diferenciaTiempo).getMinutes()/60 + new Date(diferenciaTiempo).getSeconds()/3600;
+                totalMinutos += (new Date(diferenciaTiempo).getHours()-1)*60 + new Date(diferenciaTiempo).getMinutes() + new Date(diferenciaTiempo).getSeconds()/60;
+                totalSegundos += (new Date(diferenciaTiempo).getHours()-1)*3600 + new Date(diferenciaTiempo).getMinutes()*60 + new Date(diferenciaTiempo).getSeconds();
+            } else {
+                posibleFallo = true;
+            }
+        }
+        const dataUser = await conexion.recHit(empresa, `SELECT * FROM dependentes WHERE codi = ${idTrabajador}`);
+        return {
+            horas: totalHoras.toFixed(2),
+            minutos: totalMinutos.toFixed(2),
+            segundos: totalSegundos.toString(),
+            error: posibleFallo,
+            fichajes: infoHoras,
+            infoTrabajador: dataUser.recordset,
+            horasTotalesMes: await calcularHorasTotales(empresa, idTrabajador, 2, 0, 0, year),
+        };
     }
-    calcularHorasTotales = async (empresa, idTrabajador, intervalo) => {
+    informeSemanal = async (empresa, idTrabajador, dia, mes, year) => {
+        const sql = `
+            SELECT tmst, historial finEvento, accio, comentari FROM cdpDadesFichador
+            WHERE usuari = ${idTrabajador} AND YEAR(tmst) = ${year} AND MONTH(tmst) = ${mes} AND DAY(tmst) >= ${dia} AND DAY(tmst) <= ${Number(dia)+7}
+            UNION ALL
+            SELECT principioEvento tmst, convert(nvarchar, finEvento, 120), tipoEvento accio, nombreevento comentari FROM Calendario_FichajePorVoz
+            WHERE idTrabajador = ${idTrabajador} AND YEAR(principioEvento) = ${year} AND MONTH(principioEvento) = ${mes} AND DAY(principioEvento) >= ${dia} AND DAY(finEvento) <= ${Number(dia)+7}
+            ORDER BY tmst ASC
+        `;
+        let horas = await conexion.recHit(empresa, sql);
+        let infoHoras = horas.recordset;
+        let totalHoras = 0, totalMinutos = 0, totalSegundos = 0;
+        let posibleFallo = false;
+        //console.log(infoHoras);
+        let tmstHoras = infoHoras.filter(t => t.finEvento === null).map(tt => tt);
+        for(let i = 0; i < tmstHoras.length; i += 2) {
+            if(tmstHoras[i] != null && tmstHoras[i+1] != null) {
+                let diferenciaTiempo = new Date(tmstHoras[i+1].tmst) - new Date(tmstHoras[i].tmst);
+                totalHoras += new Date(diferenciaTiempo).getHours()-1 + new Date(diferenciaTiempo).getMinutes()/60 + new Date(diferenciaTiempo).getSeconds()/3600;
+                totalMinutos += (new Date(diferenciaTiempo).getHours()-1)*60 + new Date(diferenciaTiempo).getMinutes() + new Date(diferenciaTiempo).getSeconds()/60;
+                totalSegundos += (new Date(diferenciaTiempo).getHours()-1)*3600 + new Date(diferenciaTiempo).getMinutes()*60 + new Date(diferenciaTiempo).getSeconds();
+            } else {
+                posibleFallo = true;
+            }
+        }
+        const dataUser = await conexion.recHit(empresa, `SELECT * FROM dependentes WHERE codi = ${idTrabajador}`);
+        return {
+            horas: totalHoras.toFixed(2),
+            minutos: totalMinutos.toFixed(2),
+            segundos: totalSegundos.toString(),
+            error: posibleFallo,
+            fichajes: infoHoras,
+            infoTrabajador: dataUser.recordset,
+            horasTotalesMes: await calcularHorasTotales(empresa, idTrabajador, 0, dia, mes, year),
+        };
+    }
+    calcularHorasTotales = async (empresa, idTrabajador, intervalo, dia, mes, year) => {
         const sql = `SELECT nom, valor FROM dependentesExtes WHERE nom LIKE 'hBase_%' AND id = ${idTrabajador} ORDER BY nom ASC`;
         const datos = await conexion.recHit(empresa, sql);
-        console.log(datos)
         if(datos.rowsAffected[0] === 0) {
             return null;
         }
-        let { TotalHoras:totalHoras } = datos.recordset[0];
-        let diasTotales = getTotalDiasMes();
-        /*if(intervalo === 1) {
-            getInformeSemanal(empresa, idTrabajador);
-        } else if(intervalo === 2) {
-            getInformeMensual(empresa, idTrabajador);
+        let sqlLibres;
+        let diasTotales;
+        if(intervalo == 0) {
+            sqlLibres = `SELECT principioEvento, finEvento, tipoEvento FROM Calendario_FichajePorVoz WHERE idTrabajador = ${idTrabajador} AND MONTH(principioEvento) = ${mes} AND MONTH(finEvento) >= ${mes} AND DAY(principioEvento) >= ${dia} AND DAY(finEvento) <= ${dia+7}`;
+            diasTotales = {
+                0: 1,
+                1: 1,
+                2: 1,
+                3: 1,
+                4: 1,
+                5: 1,
+                6: 1,
+            };
+        } else if(intervalo == 1) {
+            sqlLibres = `SELECT principioEvento, finEvento, tipoEvento FROM Calendario_FichajePorVoz WHERE idTrabajador = ${idTrabajador} AND MONTH(principioEvento) = ${mes} AND MONTH(finEvento) = ${mes}`;
+            diasTotales = getTotalDiasMes();
         } else {
-            getInformeAnual(empresa, idTrabajador);
-        }*/
-        const sqlLibres = `SELECT principioEvento, finEvento, tipoEvento FROM Calendario_FichajePorVoz WHERE idTrabajador = ${idTrabajador}`;
+            sqlLibres = `SELECT principioEvento, finEvento, tipoEvento FROM Calendario_FichajePorVoz WHERE idTrabajador = ${idTrabajador} AND YEAR(principioEvento) = ${year} AND YEAR(finEvento) = ${year}`;
+            diasTotales = getTotalDiasYear(year);
+        }
         const diasNoTrabajados = await conexion.recHit(empresa, sqlLibres);
         const infoDias = diasNoTrabajados.recordset;
-        for(let dato in infoDias) {
-            console.log(infoDias[dato]);
-            let fechaActual = new Date(infoDias[dato].principioEvento);
-            let ultimaFecha = new Date(infoDias[dato].finEvento);
-            while(fechaActual <= ultimaFecha) {
-                diasTotales[fechaActual.getDay()] -= 1;
-                fechaActual = fechaActual.addDays(1);
+        if(intervalo == 0) {
+            const fichajeInicio = (new Date(year, mes-1, dia, 0, 0, 0, 0)).addDays(1);
+            for(let dato in infoDias) {
+                let fechaActual = new Date(infoDias[dato].principioEvento);
+                let ultimaFecha = new Date(infoDias[dato].finEvento);
+                console.log(fichajeInicio, fechaActual, ultimaFecha)
+                if(fichajeInicio >= fechaActual && fichajeInicio <= ultimaFecha) {
+                    console.log('Entro');
+                    while(fechaActual <= ultimaFecha) {
+                        diasTotales[fechaActual.getDay()] -= 1;
+                        fechaActual = fechaActual.addDays(1);
+                    }
+                }
+            }
+            console.log(diasTotales)
+        } else {
+            for(let dato in infoDias) {
+                let fechaActual = new Date(infoDias[dato].principioEvento);
+                let ultimaFecha = new Date(infoDias[dato].finEvento);
+                while(fechaActual <= ultimaFecha) {
+                    diasTotales[fechaActual.getDay()] -= 1;
+                    fechaActual = fechaActual.addDays(1);
+                }
             }
         }
-        const horasPorDiaTotales = {
+        let horasPorDiaTotales = {
             lunes: datos.recordset[2].valor*diasTotales['1'],
             martes: datos.recordset[3].valor*diasTotales['2'],
             miercoles: datos.recordset[6].valor*diasTotales['3'],
@@ -242,10 +341,8 @@ module.exports = () => {
             sabado: datos.recordset[4].valor*diasTotales['6'],
             domingo: datos.recordset[0].valor*diasTotales['0'],
         }
-        const sumaMes = Object.values(horasPorDiaTotales).reduce((a, b) => a + b)
-        //console.log(horasPorDiaTotales);
-        //console.log(diasTotales);
-        return sumaMes;
+        const suma = Object.values(horasPorDiaTotales).reduce((a, b) => a + b);
+        return suma;
     }
     getTotalDiasMes = () => {
         const year = new Date().getFullYear();
@@ -264,6 +361,25 @@ module.exports = () => {
             diasTotales[date.getDay()] += 1;
             date.setDate(date.getDate() + 1);
         }
+        return diasTotales;
+    }
+    getTotalDiasYear = (year) => {
+        var date = (new Date(year, 0, 1)).addDays(1);
+        console.log(date)
+        let diasTotales = {
+            '0': 0,
+            '1': 0,
+            '2': 0,
+            '3': 0,
+            '4': 0,
+            '5': 0,
+            '6': 0,
+        }
+        while (date.getFullYear() == year) {
+            diasTotales[date.getDay()] += 1;
+            date.setDate(date.getDate() + 1);
+        }
+        console.log(diasTotales);
         return diasTotales;
     }
 }
