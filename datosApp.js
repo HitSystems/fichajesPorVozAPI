@@ -204,6 +204,7 @@ module.exports = () => {
             fichajes: infoHoras,
             infoTrabajador: dataUser.recordset,
             horasTotalesMes: await calcularHorasTotales(empresa, idTrabajador, 1, 0, mes, year),
+            tipoInforme: 'mensual',
         };
     }
     informeAnual = async (empresa, idTrabajador, year) => {
@@ -220,7 +221,6 @@ module.exports = () => {
         let infoHoras = horas.recordset;
         let totalHoras = 0, totalMinutos = 0, totalSegundos = 0;
         let posibleFallo = false;
-        //console.log(infoHoras);
         let tmstHoras = infoHoras.filter(t => t.finEvento === null).map(tt => tt);
         for(let i = 0; i < tmstHoras.length; i += 2) {
             if(tmstHoras[i] != null && tmstHoras[i+1] != null) {
@@ -241,6 +241,7 @@ module.exports = () => {
             fichajes: infoHoras,
             infoTrabajador: dataUser.recordset,
             horasTotalesMes: await calcularHorasTotales(empresa, idTrabajador, 2, 0, 0, year),
+            tipoInforme: 'anual',
         };
     }
     informeSemanal = async (empresa, idTrabajador, dia, mes, year) => {
@@ -277,6 +278,7 @@ module.exports = () => {
             fichajes: infoHoras,
             infoTrabajador: dataUser.recordset,
             horasTotalesMes: await calcularHorasTotales(empresa, idTrabajador, 0, dia, mes, year),
+            tipoInforme: 'semanal',
         };
     }
     calcularHorasTotales = async (empresa, idTrabajador, intervalo, dia, mes, year) => {
