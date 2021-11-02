@@ -181,7 +181,7 @@ module.exports = () => {
         `;
         let horas = await conexion.recHit(empresa, sql);
         let infoHoras = horas.recordset;
-        let totalHoras = 0, totalMinutos = 0, totalSegundos = 0;
+        let totalHoras = 0, totalMinutos = 0, totalSegundos = 0, totalDescanso = 0;
         let posibleFallo = false;
         //console.log(infoHoras);
         let tmstHoras = infoHoras.filter(t => t.finEvento === null).map(tt => tt);
@@ -191,6 +191,14 @@ module.exports = () => {
                 totalHoras += new Date(diferenciaTiempo).getHours()-1 + new Date(diferenciaTiempo).getMinutes()/60 + new Date(diferenciaTiempo).getSeconds()/3600;
                 totalMinutos += (new Date(diferenciaTiempo).getHours()-1)*60 + new Date(diferenciaTiempo).getMinutes() + new Date(diferenciaTiempo).getSeconds()/60;
                 totalSegundos += (new Date(diferenciaTiempo).getHours()-1)*3600 + new Date(diferenciaTiempo).getMinutes()*60 + new Date(diferenciaTiempo).getSeconds();
+                if((tmstHoras[i].accio === 3 && tmstHoras[i+1].accio === 4) || (tmstHoras[i+1].accio === 3 && tmstHoras[i+2].accio === 4)) {
+                    if(tmstHoras[i].accio === 3) {
+                        diferenciaTiempo = new Date(tmstHoras[i+1].tmst) - new Date(tmstHoras[i].tmst);
+                    } else {
+                        diferenciaTiempo = new Date(tmstHoras[i+2].tmst) - new Date(tmstHoras[i+1].tmst);
+                    }
+                    totalDescanso += new Date(diferenciaTiempo).getHours()-1 + new Date(diferenciaTiempo).getMinutes()/60 + new Date(diferenciaTiempo).getSeconds()/3600;
+                }
             } else {
                 posibleFallo = true;
             }
@@ -200,10 +208,11 @@ module.exports = () => {
             horas: totalHoras.toFixed(2),
             minutos: totalMinutos.toFixed(2),
             segundos: totalSegundos.toString(),
+            tiempoDescanso: totalDescanso.toFixed(2),
             error: posibleFallo,
             fichajes: infoHoras,
             infoTrabajador: dataUser.recordset,
-            horasTotalesMes: await calcularHorasTotales(empresa, idTrabajador, 1, 0, mes, year),
+            datosAcciones: await calcularHorasTotales(empresa, idTrabajador, 1, 0, mes, year),
             tipoInforme: 'mensual',
         };
     }
@@ -219,7 +228,7 @@ module.exports = () => {
         `;
         let horas = await conexion.recHit(empresa, sql);
         let infoHoras = horas.recordset;
-        let totalHoras = 0, totalMinutos = 0, totalSegundos = 0;
+        let totalHoras = 0, totalMinutos = 0, totalSegundos = 0, totalDescanso = 0;
         let posibleFallo = false;
         let tmstHoras = infoHoras.filter(t => t.finEvento === null).map(tt => tt);
         for(let i = 0; i < tmstHoras.length; i += 2) {
@@ -228,6 +237,14 @@ module.exports = () => {
                 totalHoras += new Date(diferenciaTiempo).getHours()-1 + new Date(diferenciaTiempo).getMinutes()/60 + new Date(diferenciaTiempo).getSeconds()/3600;
                 totalMinutos += (new Date(diferenciaTiempo).getHours()-1)*60 + new Date(diferenciaTiempo).getMinutes() + new Date(diferenciaTiempo).getSeconds()/60;
                 totalSegundos += (new Date(diferenciaTiempo).getHours()-1)*3600 + new Date(diferenciaTiempo).getMinutes()*60 + new Date(diferenciaTiempo).getSeconds();
+                if((tmstHoras[i].accio === 3 && tmstHoras[i+1].accio === 4) || (tmstHoras[i+1].accio === 3 && tmstHoras[i+2].accio === 4)) {
+                    if(tmstHoras[i].accio === 3) {
+                        diferenciaTiempo = new Date(tmstHoras[i+1].tmst) - new Date(tmstHoras[i].tmst);
+                    } else {
+                        diferenciaTiempo = new Date(tmstHoras[i+2].tmst) - new Date(tmstHoras[i+1].tmst);
+                    }
+                    totalDescanso += new Date(diferenciaTiempo).getHours()-1 + new Date(diferenciaTiempo).getMinutes()/60 + new Date(diferenciaTiempo).getSeconds()/3600;
+                }
             } else {
                 posibleFallo = true;
             }
@@ -237,10 +254,11 @@ module.exports = () => {
             horas: totalHoras.toFixed(2),
             minutos: totalMinutos.toFixed(2),
             segundos: totalSegundos.toString(),
+            tiempoDescanso: totalDescanso.toFixed(2),
             error: posibleFallo,
             fichajes: infoHoras,
             infoTrabajador: dataUser.recordset,
-            horasTotalesMes: await calcularHorasTotales(empresa, idTrabajador, 2, 0, 0, year),
+            datosAcciones: await calcularHorasTotales(empresa, idTrabajador, 2, 0, 0, year),
             tipoInforme: 'anual',
         };
     }
@@ -255,7 +273,7 @@ module.exports = () => {
         `;
         let horas = await conexion.recHit(empresa, sql);
         let infoHoras = horas.recordset;
-        let totalHoras = 0, totalMinutos = 0, totalSegundos = 0;
+        let totalHoras = 0, totalMinutos = 0, totalSegundos = 0, totalDescanso = 0;
         let posibleFallo = false;
         //console.log(infoHoras);
         let tmstHoras = infoHoras.filter(t => t.finEvento === null).map(tt => tt);
@@ -265,6 +283,14 @@ module.exports = () => {
                 totalHoras += new Date(diferenciaTiempo).getHours()-1 + new Date(diferenciaTiempo).getMinutes()/60 + new Date(diferenciaTiempo).getSeconds()/3600;
                 totalMinutos += (new Date(diferenciaTiempo).getHours()-1)*60 + new Date(diferenciaTiempo).getMinutes() + new Date(diferenciaTiempo).getSeconds()/60;
                 totalSegundos += (new Date(diferenciaTiempo).getHours()-1)*3600 + new Date(diferenciaTiempo).getMinutes()*60 + new Date(diferenciaTiempo).getSeconds();
+                if((tmstHoras[i].accio === 3 && tmstHoras[i+1].accio === 4) || (tmstHoras[i+1].accio === 3 && tmstHoras[i+2].accio === 4)) {
+                    if(tmstHoras[i].accio === 3) {
+                        diferenciaTiempo = new Date(tmstHoras[i+1].tmst) - new Date(tmstHoras[i].tmst);
+                    } else {
+                        diferenciaTiempo = new Date(tmstHoras[i+2].tmst) - new Date(tmstHoras[i+1].tmst);
+                    }
+                    totalDescanso += new Date(diferenciaTiempo).getHours()-1 + new Date(diferenciaTiempo).getMinutes()/60 + new Date(diferenciaTiempo).getSeconds()/3600;
+                }
             } else {
                 posibleFallo = true;
             }
@@ -274,10 +300,11 @@ module.exports = () => {
             horas: totalHoras.toFixed(2),
             minutos: totalMinutos.toFixed(2),
             segundos: totalSegundos.toString(),
+            tiempoDescanso: totalDescanso.toFixed(2),
             error: posibleFallo,
             fichajes: infoHoras,
             infoTrabajador: dataUser.recordset,
-            horasTotalesMes: await calcularHorasTotales(empresa, idTrabajador, 0, dia, mes, year),
+            datosAcciones: await calcularHorasTotales(empresa, idTrabajador, 0, dia, mes, year),
             tipoInforme: 'semanal',
         };
     }
@@ -301,7 +328,7 @@ module.exports = () => {
                 6: 1,
             };
         } else if(intervalo == 1) {
-            sqlLibres = `SELECT principioEvento, finEvento, tipoEvento FROM Calendario_FichajePorVoz WHERE idTrabajador = ${idTrabajador} AND MONTH(principioEvento) = ${mes} AND MONTH(finEvento) = ${mes}`;
+            sqlLibres = `SELECT principioEvento, finEvento, tipoEvento FROM Calendario_FichajePorVoz WHERE idTrabajador = ${idTrabajador} AND MONTH(principioEvento) = ${mes}`;
             diasTotales = getTotalDiasMes();
         } else {
             sqlLibres = `SELECT principioEvento, finEvento, tipoEvento FROM Calendario_FichajePorVoz WHERE idTrabajador = ${idTrabajador} AND YEAR(principioEvento) = ${year} AND YEAR(finEvento) = ${year}`;
@@ -309,27 +336,35 @@ module.exports = () => {
         }
         const diasNoTrabajados = await conexion.recHit(empresa, sqlLibres);
         const infoDias = diasNoTrabajados.recordset;
+        let tipoDia = {
+            1: 0,
+            2: 0,
+            3: 0,
+            4: 0,
+        };
+        console.log(infoDias);
         if(intervalo == 0) {
             const fichajeInicio = (new Date(year, mes-1, dia, 0, 0, 0, 0)).addDays(1);
             for(let dato in infoDias) {
                 let fechaActual = new Date(infoDias[dato].principioEvento);
                 let ultimaFecha = new Date(infoDias[dato].finEvento);
-                console.log(fichajeInicio, fechaActual, ultimaFecha)
+                tipoDia[infoDias[dato].tipoEvento] += 1;
                 if(fichajeInicio >= fechaActual && fichajeInicio <= ultimaFecha) {
-                    console.log('Entro');
                     while(fechaActual <= ultimaFecha) {
                         diasTotales[fechaActual.getDay()] -= 1;
                         fechaActual = fechaActual.addDays(1);
                     }
                 }
             }
-            console.log(diasTotales)
         } else {
             for(let dato in infoDias) {
-                let fechaActual = new Date(infoDias[dato].principioEvento);
+                let primeraFecha = new Date(infoDias[dato].principioEvento);
                 let ultimaFecha = new Date(infoDias[dato].finEvento);
+                let fechaActual = new Date(infoDias[dato].principioEvento);
                 while(fechaActual <= ultimaFecha) {
+                    if(fechaActual.getMonth() !== primeraFecha.getMonth()) break;
                     diasTotales[fechaActual.getDay()] -= 1;
+                    tipoDia[infoDias[dato].tipoEvento] += 1;
                     fechaActual = fechaActual.addDays(1);
                 }
             }
@@ -344,7 +379,10 @@ module.exports = () => {
             domingo: datos.recordset[0].valor*diasTotales['0'],
         }
         const suma = Object.values(horasPorDiaTotales).reduce((a, b) => a + b);
-        return suma;
+        return {
+            suma,
+            tipoDia,
+        };
     }
     getTotalDiasMes = () => {
         const year = new Date().getFullYear();
@@ -381,7 +419,6 @@ module.exports = () => {
             diasTotales[date.getDay()] += 1;
             date.setDate(date.getDate() + 1);
         }
-        console.log(diasTotales);
         return diasTotales;
     }
 }
