@@ -96,3 +96,9 @@ app.get('/informe', (req, res) => {
         res.send(data);
     })
 })
+app.post('/actualizarComentario', (req, res) => {
+    let { empresa, fichajeId, comentario } = req.body;
+    actualizarComentario(empresa, fichajeId, comentario).then((data) => {
+        res.sendStatus(200);
+    })
+})

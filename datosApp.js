@@ -82,7 +82,7 @@ module.exports = () => {
         }
         if(trabajador == 0 || trabajador == 'Todos los trabajadores') {
             sql = `
-                SELECT CAST(tmst AS Date) AS fecha, DATEPART(hour, tmst) AS hora, DATEPART(minute, tmst) AS minutos, accio, nom, comentari FROM cdpDadesFichador
+                SELECT CAST(tmst AS Date) AS fecha, DATEPART(hour, tmst) AS hora, DATEPART(minute, tmst) AS minutos, accio, idr, comentari, nom FROM cdpDadesFichador
                 JOIN Dependentes ON usuari = Dependentes.CODI
                 WHERE DATEPART(hour, tmst) > ${horaMinima} AND DATEPART(hour, tmst) < ${horaMaxima}
                 AND MONTH(tmst) = ${mes} AND YEAR(tmst) = ${year}
@@ -90,7 +90,7 @@ module.exports = () => {
             `;
         } else {
             sql = `
-                SELECT CAST(tmst AS Date) AS fecha, DATEPART(hour, tmst) AS hora, DATEPART(minute, tmst) AS minutos, accio, nom, comentari FROM cdpDadesFichador
+                SELECT CAST(tmst AS Date) AS fecha, DATEPART(hour, tmst) AS hora, DATEPART(minute, tmst) AS minutos, accio, idr,comentari, nom FROM cdpDadesFichador
                 JOIN Dependentes ON usuari = Dependentes.CODI
                 WHERE usuari = ${trabajador} AND DATEPART(hour, tmst) > ${horaMinima} AND DATEPART(hour, tmst) < ${horaMaxima}
                 AND MONTH(tmst) = ${mes} AND YEAR(tmst) = ${year}
@@ -420,5 +420,9 @@ module.exports = () => {
             date.setDate(date.getDate() + 1);
         }
         return diasTotales;
+    }
+    actualizarComentario = async (empresa, fichajeId, comentario) => {
+        await conexion.recHit(empresa, `UPDATE cdpDadesFichador SET comentari = comentari + '${comentario}' WHERE idr = '${fichajeId}'`);
+        return 200;
     }
 }
