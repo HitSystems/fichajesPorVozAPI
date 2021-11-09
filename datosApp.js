@@ -3,7 +3,7 @@ const bcrypt = require('bcryptjs');
 
 module.exports = () => {
     iniciarSesionGoogle = async (email, givenName, googleId, name) => {
-        const checkGoogleId = `SELECT googleId FROM FichajePorVoz_Usuarios WHERE googleId = '${googleId}'`;
+        const checkGoogleId = `SELECT googleId FROM FichajePorVoz_Usuarios WHERE token = '${googleId}'`;
         const result = await conexion.recHit('Hit', checkGoogleId);
         if(result.recordset.length <= 0) {
             const sql = "SELECT DISTINCT name FROM sys.databases WHERE name LIKE 'Fac%' AND name NOT LIKE '%_bak'AND name NOT IN ('Fac_Demo', 'Fac_Prueba')";
