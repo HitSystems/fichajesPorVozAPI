@@ -1,23 +1,50 @@
 const conexion = require('./conexion');
-
+const bcrypt = require('bcryptjs');
 
 module.exports = () => {
-    crearUserCognito = async(nombre, email, sub) => {
-        let sql = "SELECT DISTINCT name FROM sys.databases WHERE name LIKE 'Fac%' AND name NOT LIKE '%_bak'AND name NOT IN ('Fac_Demo', 'Fac_Prueba')";
-        let empresas = await conexion.recHit('Hit', sql);
-        let empresa = undefined, idTrabajador = undefined;
-        for(let indexEmpresa in empresas.recordset) {
-            let {name} = empresas.recordset[indexEmpresa];
-            let usersMailsAndIds = await conexion.recHit(name, "SELECT id, valor FROM dependentesextes WHERE nom = 'EMAIL' AND valor NOT LIKE ''");
-            for(let indexCorreo in usersMailsAndIds.recordset) {
-                if(email === usersMailsAndIds.recordset[indexCorreo].valor) {
-                    empresa = name;
-                    idTrabajador = usersMailsAndIds.recordset[indexCorreo].id;
-                    break;
+    iniciarSesionGoogle = async (email, givenName, googleId, name) => {
+        const checkGoogleId = `SELECT googleId FROM FichajePorVoz_Usuarios WHERE googleId = '${googleId}'`;
+        const result = await conexion.recHit('Hit', checkGoogleId);
+        if(result.recordset.length <= 0) {
+            const sql = "SELECT DISTINCT name FROM sys.databases WHERE name LIKE 'Fac%' AND name NOT LIKE '%_bak'AND name NOT IN ('Fac_Demo', 'Fac_Prueba')";
+            const empresas = await conexion.recHit('Hit', sql);
+            let empresa = undefined, idTrabajador = undefined;
+            for(let indexEmpresa in empresas.recordset) {
+                let { name } = empresas.recordset[indexEmpresa];
+                let usersMailsAndIds = await conexion.recHit(name, "SELECT id, valor FROM dependentesextes WHERE nom = 'EMAIL' AND valor NOT LIKE ''");
+                for(let indexCorreo in usersMailsAndIds.recordset) {
+                    if(email === usersMailsAndIds.recordset[indexCorreo].valor) {
+                        empresa = name;
+                        idTrabajador = usersMailsAndIds.recordset[indexCorreo].id;
+                        break;
+                    }
                 }
+                if(empresa !== undefined) break;
             }
-            if(empresa !== undefined) break;
+            if(idTrabajador === undefined) return 403;
+            const sqlNewUser = `INSERT INTO FichajePorVoz_Usuarios (idTrabajador, nombre, mail, empresa, googleId) VALUES (${idTrabajador}, '${givenName}', '${email}', '${empresa}', '${googleId}')`;
+            await conexion.recHit('Hit', sqlNewUser);
         }
+        const userData = `SELECT * FROM FichajePorVoz_Usuarios WHERE googleId = '${googleId}'`;
+        let { accionUltimoFichaje, accionUltimoDescanso } = await ultimasAccionesFichajes(idTrabajador, empresa);
+        const data = await conexion.recHit('Hit', userData);
+        data.recordset[0].accionUltimoFichaje = accionUltimoFichaje;
+        data.recordset[0].accionUltimoDescanso = accionUltimoDescanso;
+        return data.recordset[0];
+    }
+    iniciarSesion = async (email, passwd) => {
+        const sql = `SELECT * FROM FichajePorVoz_Usuarios WHERE mail = '${email}'`;
+        const result = await conexion.recHit('Hit', sql);
+        if(result.recordset.length <= 0) return 410; // El mail no existe
+        const correctPasswd = bcrypt.compareSync(passwd, result.recordset[0].passwd);
+        if(!correctPasswd) return 403; // Contraseña incorrecta
+        console.log(result.recordset[0])
+        let { accionUltimoFichaje, accionUltimoDescanso } = await ultimasAccionesFichajes(result.recordset[0].idTrabajador, result.recordset[0].empresa);
+        result.recordset[0].accionUltimoFichaje = accionUltimoFichaje;
+        result.recordset[0].accionUltimoDescanso = accionUltimoDescanso;
+        return result.recordset[0];
+    }
+    crearUserCognito = async(nombre, email, sub) => {
         await conexion.recHit('Hit', `INSERT INTO cognitoUsersSUB (idTrabajador, nombre, mail, empresa, SUB) VALUES (${idTrabajador}, '${nombre}', '${email}', '${empresa}', '${sub}')`);
     }
     listarUsuarios = async (empresa) => {
@@ -34,8 +61,8 @@ module.exports = () => {
         }
         return dataUsuarios;
     };
-    userData = async (sub) => {
-        let userData = await conexion.recHit('Hit', `SELECT * FROM cognitoUsersSUB WHERE sub = '${sub}'`);
+    userData = async (id) => {
+        let userData = await conexion.recHit('Hit', `SELECT * FROM FichajePorVoz_Usuarios WHERE googleId = '${id}'`);
         let {idTrabajador, nombre, mail, empresa} = userData.recordset[0];
         let { accionUltimoFichaje, accionUltimoDescanso } = await ultimasAccionesFichajes(idTrabajador, empresa);
         return {
@@ -100,7 +127,7 @@ module.exports = () => {
         let datos = await conexion.recHit(empresa, sql);
         return datos.recordset;
     }
-    crearTrabajador = async (empresa, nombre, primerApellido, segundoApellido, email, genero, dni, telefono, movil, nacimiento, direccion, fechaAlta, cargo, informacionComplementaria, administrador, imagen) => {
+    crearTrabajador = async (empresa, nombre, primerApellido, segundoApellido, email, passwd, genero, dni, telefono, movil, nacimiento, direccion, fechaAlta, cargo, informacionComplementaria, administrador) => {
         let sqlMaxCODI = await conexion.recHit(empresa, 'SELECT MAX(CODI) as codi FROM Dependentes');
         let newCodi = (sqlMaxCODI.recordset[0].codi) + 1;
         let sqlDependentes = `INSERT INTO Dependentes (CODI, NOM, MEMO, TELEFON, ADREÇA, Icona, [Hi Editem Horaris], Tid) VALUES (${newCodi},'${nombre} ${primerApellido} ${segundoApellido}', '${nombre}', ${movil}, '${direccion}', NULL, 1, NULL)`;
@@ -117,16 +144,26 @@ module.exports = () => {
                                    (${newCodi}, 'TELEFONO', '${telefono}')`;
         if(administrador) sqlDependentesExtes += `, (${newCodi}, 'TIPUSTREBALLADOR', 'GERENT')`;
         await conexion.recHit(empresa, sqlDependentesExtes);
+        await addTrabajadorTablaHit(newCodi, nombre, email, empresa, passwd);
         return {
             id: newCodi
         };
     }
+    addTrabajadorTablaHit = async (idTrabajador, nombre, mail, empresa, passwd) => {
+        const fechaActual = new Date().getTime().toString(36);
+        const randomNumber = Math.random().toString(36).slice(2);
+        const token = `ng${fechaActual}+${randomNumber}`;
+        const salt = bcrypt.genSaltSync(10);
+        const hash = bcrypt.hashSync(passwd, salt);
+        const sql = `INSERT INTO FichajePorVoz_Usuarios (idTrabajador, nombre, mail, empresa, token, passwd) VALUES (${idTrabajador}, '${nombre}', '${mail}', '${empresa}', '${token}', '${hash}')`;
+        await conexion.recHit('Hit', sql);
+    }
     datosTrabajador = async (empresa, idUsuario) => {
         let data = await conexion.recHit(empresa, `SELECT valor FROM dependentesExtes WHERE id = ${idUsuario} AND (nom = 'TLF_MOBIL' OR nom = 'ADRESA' OR nom = 'IMAGEN_FICHAJEPORVOZ') ORDER BY nom`);
         return {
-            direccion: data.recordset[0] !== null ? data.recordset[0].valor : '',
-            imagen: data.recordset[1] !== null ? data.recordset[1].valor : 'https://media-exp3.licdn.com/dms/image/C4D0BAQHmN_j9JghpIA/company-logo_200_200/0/1591341525462?e=2159024400&v=beta&t=qruY0BBlI1LtzqfcOo9UOtJNKITx_0Rc9wJY8RhC-Og',
-            movil: data.recordset[2].valor,
+            direccion: data.recordset[0] ? data.recordset[0].valor : '',
+            imagen: data.recordset[1] ? data.recordset[1].valor : 'https://cdn.iconscout.com/icon/free/png-256/account-avatar-profile-human-man-user-30448.png',
+            movil: data.recordset[2] ? data.recordset[2].valor : '',
         };
     }
     eventosCalendario = async (empresa, idTrabajador) => {

@@ -22,6 +22,22 @@ app.listen(port, () => {
 app.get('/', (req, res) => {
     res.send('Esto es la API de FichajesPorVoz');
 });
+app.post('/iniciar-sesion', (req, res) => {
+    const { google } = req.body;
+    if(google) {
+        const { email, givenName, googleId, name } = req.body;
+        iniciarSesionGoogle(email, givenName, googleId, name).then((data) => {
+            if(isNaN(data)) res.send(data);
+            else res.sendStatus(data);
+        })
+    } else {
+        const { email, passwd } = req.body;
+        iniciarSesion(email, passwd).then((data) => {
+            if(isNaN(data)) res.send(data);
+            else res.sendStatus(data);
+        })
+    }
+})
 app.get('/users', (req, res) => {
     listarUsuarios(req.query.empresa).then((data) => {
         res.send(data)
@@ -61,9 +77,9 @@ app.get('/fichajes', (req, res) => {
 })
 app.post('/nuevoTrabajador', (req, res) => {
     let {
-        empresa, nombre, primerApellido, segundoApellido, email, genero, dni, telefono, movil, nacimiento, direccion, fechaAlta, cargo, informacionComplementaria, administrador
+        empresa, nombre, primerApellido, segundoApellido, email, passwd, genero, dni, telefono, movil, nacimiento, direccion, fechaAlta, cargo, informacionComplementaria, administrador
     } = req.body;
-    crearTrabajador(empresa, nombre, primerApellido, segundoApellido, email, genero, dni, telefono, movil, nacimiento, direccion, fechaAlta, cargo, informacionComplementaria, administrador).then((data) => {
+    crearTrabajador(empresa, nombre, primerApellido, segundoApellido, email, passwd, genero, dni, telefono, movil, nacimiento, direccion, fechaAlta, cargo, informacionComplementaria, administrador).then((data) => {
         res.send(data);
     })
 })
