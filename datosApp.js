@@ -23,11 +23,12 @@ module.exports = () => {
             }
             if(idTrabajador === undefined) return 403;
             const sqlNewUser = `INSERT INTO FichajePorVoz_Usuarios (idTrabajador, nombre, mail, empresa, googleId) VALUES (${idTrabajador}, '${givenName}', '${email}', '${empresa}', '${googleId}')`;
+            console.log(`En el if ${idTrabajador}`)
             await conexion.recHit('Hit', sqlNewUser);
         }
-        const userData = `SELECT * FROM FichajePorVoz_Usuarios WHERE googleId = '${googleId}'`;
-        let { accionUltimoFichaje, accionUltimoDescanso } = await ultimasAccionesFichajes(idTrabajador, empresa);
+        const userData = `SELECT * FROM FichajePorVoz_Usuarios WHERE token = '${googleId}'`;
         const data = await conexion.recHit('Hit', userData);
+        let { accionUltimoFichaje, accionUltimoDescanso } = await ultimasAccionesFichajes(data.recordset[0].idTrabajador, data.recordset[0].empresa);
         data.recordset[0].accionUltimoFichaje = accionUltimoFichaje;
         data.recordset[0].accionUltimoDescanso = accionUltimoDescanso;
         return data.recordset[0];
