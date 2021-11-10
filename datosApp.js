@@ -48,8 +48,8 @@ module.exports = () => {
     crearUserCognito = async(nombre, email, sub) => {
         await conexion.recHit('Hit', `INSERT INTO cognitoUsersSUB (idTrabajador, nombre, mail, empresa, SUB) VALUES (${idTrabajador}, '${nombre}', '${email}', '${empresa}', '${sub}')`);
     }
-    listarUsuarios = async (empresa) => {
-        let usuarios = await conexion.recHit(empresa, 'SELECT * FROM Dependentes');
+    listarUsuarios = async (empresa, busqueda) => {
+        let usuarios = await conexion.recHit(empresa, `SELECT * FROM Dependentes WHERE nom LIKE '%${busqueda}%'`);
         let dataUsuarios = [];
         for(let user in usuarios.recordset) {
             let {CODI:codi, NOM:nom, MEMO:memo} = usuarios.recordset[user];
@@ -462,6 +462,17 @@ module.exports = () => {
     }
     actualizarComentario = async (empresa, fichajeId, comentario) => {
         await conexion.recHit(empresa, `UPDATE cdpDadesFichador SET comentari = comentari + '${comentario}' WHERE idr = '${fichajeId}'`);
+        return 200;
+    }
+    borrarTrabajador = async (empresa, idTrabajador) => {
+        const sqlDependentes = `DELETE FROM Dependentes WHERE CODI = ${idTrabajador}`;
+        const sqlDependentesExtes = `DELETE FROM DependentesExtes WHERE id = ${idTrabajador}`;
+        const sqlCalendarioLaboral = `DELETE FROM Calendario_FichajePorVoz WHERE idTrabajador = ${idTrabajador}`;
+        const sqlUsuarioHit = `DELETE FROM FichajePorVoz_Usuarios WHERE idTrabajador = ${idTrabajador} AND empresa = '${empresa}'`;
+        conexion.recHit(empresa, sqlDependentes); 
+        conexion.recHit(empresa, sqlDependentesExtes);
+        conexion.recHit(empresa, sqlCalendarioLaboral);
+        conexion.recHit('Hit', sqlUsuarioHit);
         return 200;
     }
 }

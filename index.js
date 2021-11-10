@@ -39,7 +39,7 @@ app.post('/iniciar-sesion', (req, res) => {
     }
 })
 app.get('/users', (req, res) => {
-    listarUsuarios(req.query.empresa).then((data) => {
+    listarUsuarios(req.query.empresa, req.query.busqueda).then((data) => {
         res.send(data)
     })
 })
@@ -115,6 +115,12 @@ app.get('/informe', (req, res) => {
 app.post('/actualizarComentario', (req, res) => {
     let { empresa, fichajeId, comentario } = req.body;
     actualizarComentario(empresa, fichajeId, comentario).then((data) => {
+        res.sendStatus(200);
+    })
+})
+app.post('/borrarTrabajador', (req, res) => {
+    const { empresa, idTrabajador } = req.body;
+    borrarTrabajador(empresa, idTrabajador).then((data) => {
         res.sendStatus(200);
     })
 })
