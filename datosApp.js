@@ -210,7 +210,7 @@ module.exports = () => {
     }
     informeMensual = async (empresa, idTrabajador, mes, year) => {
         const sql = `
-            SELECT tmst, historial finEvento, accio, comentari FROM cdpDadesFichador
+            SELECT tmst, historial finEvento, accio, comentari collate Latin1_General_CI_AI AS comentari FROM cdpDadesFichador
             WHERE usuari = ${idTrabajador} AND YEAR(tmst) = ${year} AND MONTH(tmst) = ${mes}
             UNION ALL
             SELECT principioEvento tmst, convert(nvarchar, finEvento, 120), tipoEvento accio, nombreevento comentari FROM Calendario_FichajePorVoz
@@ -242,6 +242,7 @@ module.exports = () => {
             }
         }
         const dataUser = await conexion.recHit(empresa, `SELECT * FROM dependentes WHERE codi = ${idTrabajador}`);
+
         return {
             horas: totalHoras.toFixed(2),
             minutos: totalMinutos.toFixed(2),
@@ -257,7 +258,7 @@ module.exports = () => {
     informeAnual = async (empresa, idTrabajador, year) => {
         console.log('Entro en el informe')
         const sql = `
-            SELECT tmst, historial finEvento, accio, comentari FROM cdpDadesFichador
+            SELECT tmst, historial finEvento, accio, comentari collate Latin1_General_CI_AI AS comentari FROM cdpDadesFichador
             WHERE usuari = ${idTrabajador} AND YEAR(tmst) = ${year}
             UNION ALL
             SELECT principioEvento tmst, convert(nvarchar, finEvento, 120), tipoEvento accio, nombreevento comentari FROM Calendario_FichajePorVoz
@@ -302,7 +303,7 @@ module.exports = () => {
     }
     informeSemanal = async (empresa, idTrabajador, dia, mes, year) => {
         const sql = `
-            SELECT tmst, historial finEvento, accio, comentari FROM cdpDadesFichador
+            SELECT tmst, historial finEvento, accio, comentari collate Latin1_General_CI_AI AS comentari FROM cdpDadesFichador
             WHERE usuari = ${idTrabajador} AND YEAR(tmst) = ${year} AND MONTH(tmst) = ${mes} AND DAY(tmst) >= ${dia} AND DAY(tmst) <= ${Number(dia)+7}
             UNION ALL
             SELECT principioEvento tmst, convert(nvarchar, finEvento, 120), tipoEvento accio, nombreevento comentari FROM Calendario_FichajePorVoz
