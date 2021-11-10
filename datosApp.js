@@ -2,9 +2,9 @@ const conexion = require('./conexion');
 const bcrypt = require('bcryptjs');
 
 module.exports = () => {
-    iniciarSesionGoogle = async (email, givenName, googleId, name) => {
-        const checkGoogleId = `SELECT token FROM FichajePorVoz_Usuarios WHERE token = '${googleId}'`;
-        const result = await conexion.recHit('Hit', checkGoogleId);
+    iniciarSesionGoogle = async (email, givenName, token, name) => {
+        const checkToken = `SELECT token FROM FichajePorVoz_Usuarios WHERE token = '${token}'`;
+        const result = await conexion.recHit('Hit', checkToken);
         if(result.recordset.length <= 0) {
             const sql = "SELECT DISTINCT name FROM sys.databases WHERE name LIKE 'Fac%' AND name NOT LIKE '%_bak'AND name NOT IN ('Fac_Demo', 'Fac_Prueba')";
             const empresas = await conexion.recHit('Hit', sql);
@@ -22,11 +22,11 @@ module.exports = () => {
                 if(empresa !== undefined) break;
             }
             if(idTrabajador === undefined) return 403;
-            const sqlNewUser = `INSERT INTO FichajePorVoz_Usuarios (idTrabajador, nombre, mail, empresa, googleId) VALUES (${idTrabajador}, '${givenName}', '${email}', '${empresa}', '${googleId}')`;
+            const sqlNewUser = `INSERT INTO FichajePorVoz_Usuarios (idTrabajador, nombre, mail, empresa, token) VALUES (${idTrabajador}, '${givenName}', '${email}', '${empresa}', '${token}')`;
             console.log(`En el if ${idTrabajador}`)
             await conexion.recHit('Hit', sqlNewUser);
         }
-        const userData = `SELECT * FROM FichajePorVoz_Usuarios WHERE token = '${googleId}'`;
+        const userData = `SELECT * FROM FichajePorVoz_Usuarios WHERE token = '${token}'`;
         const data = await conexion.recHit('Hit', userData);
         let { accionUltimoFichaje, accionUltimoDescanso } = await ultimasAccionesFichajes(data.recordset[0].idTrabajador, data.recordset[0].empresa);
         data.recordset[0].accionUltimoFichaje = accionUltimoFichaje;
