@@ -20,7 +20,7 @@ app.listen(port, () => {
     console.log(`API server is listening on port ${port}`);
 })
 app.get('/', (req, res) => {
-    res.send('Esto es la API de FichajesPorVoz, se cambian los datos solo.');
+    res.send('Esto es la API de FichajesPorVoz.');
 });
 app.post('/iniciar-sesion', (req, res) => {
     const { google } = req.body;
