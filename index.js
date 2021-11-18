@@ -4,13 +4,13 @@ require('./datosApp.js')();
 require('./sockets.js')();
 const app = express();
 const http = require('http').Server(app);
-const io = require('socket.io')(http, {cors:{origin: "*",}});
+const io = require('socket.io')(http, { cors: { origin: "*", } });
 const port = 3030;
 const portSocket = 3050;
 
 console.clear();
-app.use(express.urlencoded({extended: false, limit: '50mb'}));
-app.use(express.json({limit: '50mb'}));
+app.use(express.urlencoded({ extended: false, limit: '50mb' }));
+app.use(express.json({ limit: '50mb' }));
 app.use(cors());
 initSockets(io);
 http.listen(portSocket, () => {

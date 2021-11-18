@@ -242,7 +242,6 @@ module.exports = () => {
             }
         }
         const dataUser = await conexion.recHit(empresa, `SELECT * FROM dependentes WHERE codi = ${idTrabajador}`);
-
         return {
             horas: totalHoras.toFixed(2),
             minutos: totalMinutos.toFixed(2),
@@ -349,9 +348,18 @@ module.exports = () => {
     }
     calcularHorasTotales = async (empresa, idTrabajador, intervalo, dia, mes, year) => {
         const sql = `SELECT nom, valor FROM dependentesExtes WHERE nom LIKE 'hBase_%' AND id = ${idTrabajador} ORDER BY nom ASC`;
+        console.log(sql)
         const datos = await conexion.recHit(empresa, sql);
         if(datos.rowsAffected[0] === 0) {
-            return null;
+            return {
+                suma: 0,
+                tipoDia: {
+                    1: 0,
+                    2: 0,
+                    3: 0,
+                    4: 0
+                },
+            };
         }
         let sqlLibres;
         let diasTotales;
