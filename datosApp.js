@@ -62,8 +62,9 @@ module.exports = () => {
         }
         return dataUsuarios;
     };
-    userData = async (id) => {
-        let userData = await conexion.recHit('Hit', `SELECT * FROM FichajePorVoz_Usuarios WHERE googleId = '${id}'`);
+    userData = async (token) => {
+        const sql = `SELECT * FROM FichajePorVoz_Usuarios WHERE token = '${token}'`;
+        let userData = await conexion.recHit('Hit', sql);
         let {idTrabajador, nombre, mail, empresa} = userData.recordset[0];
         let { accionUltimoFichaje, accionUltimoDescanso } = await ultimasAccionesFichajes(idTrabajador, empresa);
         return {
@@ -128,7 +129,8 @@ module.exports = () => {
         let datos = await conexion.recHit(empresa, sql);
         return datos.recordset;
     }
-    crearTrabajador = async (empresa, nombre, primerApellido, segundoApellido, email, passwd, genero, dni, telefono, movil, nacimiento, direccion, fechaAlta, cargo, informacionComplementaria, administrador) => {
+    crearTrabajador = async (empresa, nombre, primerApellido, segundoApellido, email, passwd, genero, dni, telefono, movil, nacimiento, direccion, cargo, informacionComplementaria, administrador) => {
+
         let sqlMaxCODI = await conexion.recHit(empresa, 'SELECT MAX(CODI) as codi FROM Dependentes');
         let newCodi = (sqlMaxCODI.recordset[0].codi) + 1;
         let sqlDependentes = `INSERT INTO Dependentes (CODI, NOM, MEMO, TELEFON, ADREÇA, Icona, [Hi Editem Horaris], Tid) VALUES (${newCodi},'${nombre} ${primerApellido} ${segundoApellido}', '${nombre}', ${movil}, '${direccion}', NULL, 1, NULL)`;
@@ -139,7 +141,7 @@ module.exports = () => {
                                    (${newCodi}, 'DNI', '${dni}'),
                                    (${newCodi}, 'DATA_NAIXEMENT', '${nacimiento.replace(/-/g, '/')}'),
                                    (${newCodi}, 'EMAIL', '${email}'),
-                                   (${newCodi}, 'FECHA_ALTA', '${fechaAlta}'),
+                                   (${newCodi}, 'FECHA_ALTA', '${new Date().toLocaleDateString()}'),
                                    (${newCodi}, 'CARGO', '${cargo}'),
                                    (${newCodi}, 'INFORMACION_COMPLEMENTARIA', '${informacionComplementaria}'),
                                    (${newCodi}, 'TELEFONO', '${telefono}')`;
@@ -482,5 +484,26 @@ module.exports = () => {
         conexion.recHit(empresa, sqlCalendarioLaboral);
         conexion.recHit('Hit', sqlUsuarioHit);
         return 200;
+    }
+    infoTrabajador = async (empresa, idTrabajador) => {
+        const sql = `SELECT * FROM Dependentes WHERE CODI = ${idTrabajador}`;
+        const res = await conexion.recHit(empresa, sql);
+        const sql2 = `SELECT nom, valor FROM DependentesExtes WHERE id = ${idTrabajador} AND (nom = 'TLF_MOBIL' OR nom = 'DATA_NAIXEMENT' OR nom = 'DATA_NAIXEMENT' OR nom = 'EMAIL' OR nom = 'INFORMACION_COMPLEMENTARIA' OR nom = 'CARGO' OR nom = 'FECHA_ALTA' OR nom = 'IMAGEN')`;
+        const res2 = await conexion.recHit(empresa, sql2);
+        const obj1 = res.recordset[0];
+        let obj2 = res2.recordset;
+        const lengthObj2 = obj2.length;
+        const finalObj2 = {};
+        for(let i = 0; i < lengthObj2; i++) {
+            Object.defineProperty(obj2[i], obj2[i].nom,
+                Object.getOwnPropertyDescriptor(obj2[i], 'valor')
+            );
+            delete obj2[i]['valor'];
+            delete obj2[i]['nom'];
+            Object.assign(finalObj2, obj2[i]);
+        }
+        console.log(!obj2.IMAGEN)
+        if(!finalObj2.IMAGEN) finalObj2.IMAGEN = 'https://cdn.iconscout.com/icon/free/png-256/account-avatar-profile-human-man-user-30448.png';
+        return Object.assign(obj1, finalObj2);
     }
 }

@@ -44,7 +44,7 @@ app.get('/users', (req, res) => {
     })
 })
 app.get('/userData', (req, res) => {
-    userData(req.query.sub).then((data) => {
+    userData(req.query.token).then((data) => {
         res.send(data);
     })
 })
@@ -55,7 +55,7 @@ app.post('/cognitoNewUser', (req, res) => {
     })
 })
 app.get('/fichajesUser', (req, res) => {
-    fichajesUser(req.query.sub).then((data) => {
+    fichajesUser(req.query.token).then((data) => {
         res.send(data);
     })
 })
@@ -77,9 +77,9 @@ app.get('/fichajes', (req, res) => {
 })
 app.post('/nuevoTrabajador', (req, res) => {
     let {
-        empresa, nombre, primerApellido, segundoApellido, email, passwd, genero, dni, telefono, movil, nacimiento, direccion, fechaAlta, cargo, informacionComplementaria, administrador
+        empresa, nombre, primerApellido, segundoApellido, email, passwd, genero, dni, telefono, movil, nacimiento, direccion, cargo, informacionComplementaria, administrador
     } = req.body;
-    crearTrabajador(empresa, nombre, primerApellido, segundoApellido, email, passwd, genero, dni, telefono, movil, nacimiento, direccion, fechaAlta, cargo, informacionComplementaria, administrador).then((data) => {
+    crearTrabajador(empresa, nombre, primerApellido, segundoApellido, email, passwd, genero, dni, telefono, movil, nacimiento, direccion, cargo, informacionComplementaria, administrador).then((data) => {
         res.send(data);
     })
 })
@@ -122,5 +122,11 @@ app.post('/borrarTrabajador', (req, res) => {
     const { empresa, idTrabajador } = req.body;
     borrarTrabajador(empresa, idTrabajador).then((data) => {
         res.sendStatus(200);
+    })
+})
+app.get('/infoTrabajador', (req, res) => {
+    const { empresa, idTrabajador } = req.query;
+    infoTrabajador(empresa, idTrabajador).then((data) => {
+        res.send(data);
     })
 })
